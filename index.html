@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b3d91">
+  <title>RA Markerless — Campus UniAnchieta</title>
+  <meta name="description" content="Realidade Aumentada markerless (GPS + bússola) que mostra a localização dos prédios do campus UniAnchieta.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Camada 1: vídeo da câmera traseira -->
+  <video id="camera" playsinline muted autoplay></video>
+  <!-- Fundo do modo simulação (céu + chão) -->
+  <div id="sky" hidden></div>
+  <!-- Camada 2: WebGL com os pinos 3D -->
+  <canvas id="gl"></canvas>
+  <!-- Camada 3: nomes dos prédios (HTML posicionado pela projeção 3D) -->
+  <div id="labels"></div>
+
+  <!-- HUD -->
+  <header id="hud" hidden>
+    <div class="chip" id="chip-gps">GPS: aguardando…</div>
+    <div class="chip" id="chip-heading">—</div>
+    <button class="icon" id="btn-config" title="Configurar pontos" aria-label="Configurar pontos">⚙︎</button>
+    <button class="icon" id="btn-debug" title="Dados dos sensores" aria-label="Dados dos sensores">ⓘ</button>
+  </header>
+  <canvas id="radar" width="300" height="300" hidden></canvas>
+  <div id="debug" hidden></div>
+  <section id="guide" hidden>
+    <div id="guide-arrow">➤</div>
+    <div id="guide-text"><b id="guide-name">—</b><span id="guide-info">—</span></div>
+  </section>
+  <div id="simpad" hidden>
+    <button data-k="left" aria-label="Girar à esquerda">⟲</button>
+    <button data-k="fwd" aria-label="Andar para frente">▲</button>
+    <button data-k="right" aria-label="Girar à direita">⟳</button>
+    <button data-k="back" aria-label="Andar para trás">▼</button>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Tela inicial -->
+  <section id="start" class="screen">
+    <div class="card">
+      <div class="logo">📍</div>
+      <h1>RA Campus <span>UniAnchieta</span></h1>
+      <p class="sub">Realidade Aumentada <b>markerless</b>: aponte o celular para o campus e veja onde fica cada prédio, com o nome logo acima do marcador.</p>
+      <button id="btn-start" class="primary">Iniciar Realidade Aumentada</button>
+      <button id="btn-sim" class="secondary">Modo simulação (PC / teste)</button>
+      <button id="btn-config2" class="link">Configurar / calibrar pontos</button>
+      <p id="start-warn" class="warn" hidden></p>
+      <p class="tiny">Permita o acesso à <b>câmera</b>, <b>localização</b> e <b>sensores de movimento</b>. Use ao ar livre para melhor precisão do GPS.</p>
+    </div>
+  </section>
+
+  <!-- Configuração / calibração -->
+  <section id="config" class="screen" hidden>
+    <div class="card wide">
+      <div class="row between">
+        <h2>Pontos mapeados</h2>
+        <button class="icon dark" id="btn-close-config" aria-label="Fechar">✕</button>
+      </div>
+      <p class="tiny" id="config-origin"></p>
+      <p class="tiny">Para calibrar: vá até a frente de cada prédio e toque em <b>📍 Marcar aqui</b> (faz a média do GPS por alguns segundos).</p>
+      <div id="points-list"></div>
+      <button class="secondary small" id="btn-add">+ Adicionar ponto</button>
+      <h3>Validação: distância mínima de 50 m</h3>
+      <div id="validation"></div>
+      <h3>Ajustes finos</h3>
+      <label class="slider">Correção da bússola: <b id="v-offset">0°</b>
+        <input type="range" id="in-offset" min="-60" max="60" step="1" value="0"></label>
+      <label class="slider">Campo de visão da câmera: <b id="v-fov">63°</b>
+        <input type="range" id="in-fov" min="40" max="90" step="1" value="63"></label>
+      <div class="row wrap">
+        <button class="primary small" id="btn-save">Salvar</button>
+        <button class="secondary small" id="btn-export">Exportar JSON</button>
+        <label class="secondary small file">Importar JSON<input type="file" id="in-import" accept="application/json,.json" hidden></label>
+        <button class="link small" id="btn-reset">Restaurar padrão</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

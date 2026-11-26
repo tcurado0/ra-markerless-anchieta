@@ -1,0 +1,7 @@
+[
+  { "id": "predio1",    "nome": "Prédio 1",   "lat": -23.213319, "lon": -46.892950 },
+  { "id": "predio2",    "nome": "Prédio 2",   "lat": -23.212780, "lon": -46.891875 },
+  { "id": "predio3",    "nome": "Prédio 3",   "lat": -23.212421, "lon": -46.892755 },
+  { "id": "predio4",    "nome": "Prédio 4",   "lat": -23.211927, "lon": -46.893439 },
+  { "id": "anfiteatro", "nome": "Anfiteatro", "lat": -23.213364, "lon": -46.893879 }
+]
