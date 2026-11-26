@@ -1,14 +1,3 @@
-// =============================================================================
-// config.js — Pontos de interesse (POIs) e parâmetros gerais do app
-// =============================================================================
-// As coordenadas abaixo são ESTIMATIVAS iniciais em torno do campus
-// (Av. Dr. Adoniro Ladeira, 94 — Jundiaí/SP). Antes de gravar o vídeo,
-// o grupo deve ir até cada prédio e usar o botão "Marcar minha posição aqui"
-// na tela de Configuração. As coordenadas calibradas ficam salvas no
-// navegador (localStorage) e podem ser exportadas em JSON e coladas aqui
-// para virarem o novo padrão do projeto.
-// =============================================================================
-
 export const CAMPUS_CENTER = { lat: -23.21278, lon: -46.89295 };
 
 export const DEFAULT_POINTS = [
@@ -20,15 +9,15 @@ export const DEFAULT_POINTS = [
 ];
 
 export const SETTINGS = {
-  minDistance: 50,        // distância mínima exigida entre os pontos (m) — requisito B
-  eyeHeight: 1.5,         // altura aproximada da câmera do celular (m)
-  arriveRadius: 15,       // raio para considerar "você chegou" (m)
-  maxRenderDistance: 50000, // pontos mais longe que isso não são desenhados (m)
-  pinBaseHeight: 4,       // altura do pino quando está "colado" no usuário (m)
-  pinHeightPerMeter: 0.09,// cresce com a distância para continuar visível
-  fovY: 60,               // campo de visão vertical aproximado da câmera (graus)
-  gpsMaxAccuracy: 60,     // leituras piores que isso (m) são descartadas se houver melhores
-  calibrationSeconds: 6,  // tempo de média do GPS ao marcar um ponto
+  minDistance: 50,
+  eyeHeight: 1.5,
+  arriveRadius: 15,
+  maxRenderDistance: 50000,
+  pinBaseHeight: 4,
+  pinHeightPerMeter: 0.09,
+  fovY: 60,
+  gpsMaxAccuracy: 60,
+  calibrationSeconds: 6,
   storageKey: 'ra-anchieta-pontos-v1',
   headingOffsetKey: 'ra-anchieta-heading-offset-v1',
 };

@@ -1,9 +1,3 @@
-// =============================================================================
-// points.js — Carrega, salva, importa e exporta os pontos (prédios)
-// Ordem de prioridade: calibração salva no aparelho (localStorage)
-//                      → data/pontos.json (arquivo do projeto)
-//                      → DEFAULT_POINTS (js/config.js)
-// =============================================================================
 import { DEFAULT_POINTS, SETTINGS } from './config.js';
 
 function sanitize(list) {
@@ -24,11 +18,11 @@ export async function loadPoints() {
   try {
     const saved = localStorage.getItem(SETTINGS.storageKey);
     if (saved) return { points: sanitize(JSON.parse(saved)), origem: 'calibração salva neste aparelho' };
-  } catch (e) { /* localStorage indisponível ou corrompido */ }
+  } catch (e) {  }
   try {
     const r = await fetch('data/pontos.json', { cache: 'no-store' });
     if (r.ok) return { points: sanitize(await r.json()), origem: 'data/pontos.json' };
-  } catch (e) { /* sem arquivo: usa padrão */ }
+  } catch (e) {  }
   return { points: sanitize(DEFAULT_POINTS), origem: 'padrão (config.js)' };
 }
 
@@ -38,7 +32,7 @@ export function savePoints(points) {
 }
 
 export function clearSaved() {
-  try { localStorage.removeItem(SETTINGS.storageKey); } catch (e) { /* ignora */ }
+  try { localStorage.removeItem(SETTINGS.storageKey); } catch (e) {  }
 }
 
 export function exportPoints(points) {
@@ -61,5 +55,5 @@ export function loadNumber(key, fallback) {
 }
 
 export function saveNumber(key, v) {
-  try { localStorage.setItem(key, String(v)); } catch (e) { /* ignora */ }
+  try { localStorage.setItem(key, String(v)); } catch (e) {  }
 }

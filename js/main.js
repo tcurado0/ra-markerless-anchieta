@@ -1,6 +1,3 @@
-// =============================================================================
-// main.js — Orquestra o app: câmera, sensores, renderização, HUD e calibração
-// =============================================================================
 import { CAMPUS_CENTER, SETTINGS } from './config.js';
 import { GpsTracker, toENU, fromENU, haversine, cardinal, validateDistances } from './geo.js';
 import { OrientationSensor, headingPitch } from './orientation.js';
@@ -14,11 +11,11 @@ const $ = (s) => document.querySelector(s);
 const params = new URLSearchParams(location.search);
 
 const state = {
-  mode: null,              // 'ar' | 'sim'
+  mode: null,
   points: [],
   pointsOrigin: '',
-  origin: CAMPUS_CENTER,   // origem do sistema ENU (metros)
-  user: null,              // posição ENU do usuário [e, n]
+  origin: CAMPUS_CENTER,
+  user: null,
   fovLong: loadNumber('ra-anchieta-fov-v1', 63),
   sim: { e: 0, n: 0, heading: 0, pitch: 0, keys: new Set() },
   nearest: null,
@@ -31,9 +28,6 @@ orient.manualOffset = loadNumber(SETTINGS.headingOffsetKey, 0);
 let renderer = null;
 let labelEls = new Map();
 
-// ---------------------------------------------------------------------------
-// Utilidades de interface
-// ---------------------------------------------------------------------------
 let toastTimer;
 function toast(msg, ms = 2600) {
   const t = $('#toast');
@@ -51,9 +45,6 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// ---------------------------------------------------------------------------
-// Inicialização
-// ---------------------------------------------------------------------------
 async function init() {
   const r = await loadPoints();
   state.points = r.points;
@@ -80,7 +71,6 @@ async function init() {
     updateGpsChip(pos, err);
   });
 
-  // Atalho de teste: ?sim=1&e=0&n=0&h=0&p=0
   if (params.get('sim') === '1') {
     state.sim.e = Number(params.get('e') || 0);
     state.sim.n = Number(params.get('n') || 0);
@@ -103,10 +93,9 @@ async function startAR() {
   btn.disabled = true;
   btn.textContent = 'Solicitando permissões…';
   try {
-    // 1) Sensores de movimento (no iOS precisa ser dentro do clique)
     try { await orient.requestPermission(); } catch (e) { toast(e.message, 4000); }
     orient.start();
-    // 2) Câmera traseira
+
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
@@ -114,7 +103,7 @@ async function startAR() {
     const v = $('#camera');
     v.srcObject = stream;
     await v.play().catch(() => {});
-    // 3) GPS
+
     gps.start();
     state.mode = 'ar';
     showHUD();
@@ -172,15 +161,11 @@ function startLoop() {
   requestAnimationFrame(frame);
 }
 
-// ---------------------------------------------------------------------------
-// Campo de visão real da câmera (considera o corte do object-fit: cover)
-// ---------------------------------------------------------------------------
 function currentFovY() {
   const sw = window.innerWidth, sh = window.innerHeight;
   const v = $('#camera');
   let vw = v.videoWidth, vh = v.videoHeight;
   if (state.mode !== 'ar' || !vw || !vh) {
-    // simulação: lado maior da tela recebe fovLong
     const long = state.fovLong * DEG;
     if (sh >= sw) return state.fovLong;
     return (2 * Math.atan(Math.tan(long / 2) * (sh / sw))) / DEG;
@@ -192,9 +177,6 @@ function currentFovY() {
   return (2 * Math.atan(Math.tan(vFovVideo / 2) * visible)) / DEG;
 }
 
-// ---------------------------------------------------------------------------
-// Laço de renderização
-// ---------------------------------------------------------------------------
 function render(t) {
   const q = orient.update(state.mode === 'sim' ? 1 : 0.22);
   const { heading, pitch } = headingPitch(q);
@@ -202,7 +184,6 @@ function render(t) {
   updateHeadingChip(heading);
 
   if (state.mode === 'sim') {
-    // horizonte do fundo acompanha a inclinação
     const fov = currentFovY();
     const y = 50 + (Math.tan(pitch * DEG) / Math.tan((fov / 2) * DEG)) * 50;
     $('#sky').style.setProperty('--horizon', `${Math.max(-50, Math.min(150, y))}%`);
@@ -223,7 +204,6 @@ function render(t) {
   renderer.begin();
   if (state.mode === 'sim') renderer.drawGrid(eye);
 
-  // Calcula distância/rumo de cada ponto e desenha do mais longe para o mais perto
   const items = state.points.map((p, i) => {
     const pos = toENU(state.origin, p);
     const de = pos[0] - user[0], dn = pos[1] - user[1];
@@ -236,10 +216,10 @@ function render(t) {
   for (const it of items) {
     const h = SETTINGS.pinBaseHeight + it.dist * SETTINGS.pinHeightPerMeter;
     const near = it.dist <= SETTINGS.arriveRadius;
-    const bob = Math.sin(t * 2 + it.i) * 0.04 * h;     // flutua levemente
-    const sway = Math.sin(t * 0.9 + it.i) * 0.35;       // gira um pouco (mostra o volume 3D)
+    const bob = Math.sin(t * 2 + it.i) * 0.04 * h;
+    const sway = Math.sin(t * 0.9 + it.i) * 0.35;
     const ringR = h * (0.32 + 0.05 * Math.sin(t * 3 + it.i));
-    renderer.drawRing(it.pos, ringR, near ? [0.12, 0.62, 0.33] : [0.97, 0.72, 0.1], 0.55);
+    renderer.drawRing(it.pos, ringR, near ? [0.09, 0.64, 0.29] : [1, 1, 1], 0.6);
     it.top = [it.pos[0], it.pos[1], h * 1.04 + bob];
     renderer.drawPin([it.pos[0], it.pos[1], bob + h * 0.02], h, {
       yaw: sway, color: near ? [0.12, 0.62, 0.33] : renderer.pinColor,
@@ -253,9 +233,6 @@ function render(t) {
   updateDebug(heading, pitch, byNear);
 }
 
-// ---------------------------------------------------------------------------
-// Nomes acima dos pinos (HTML) — com prevenção simples de sobreposição
-// ---------------------------------------------------------------------------
 function rebuildLabels() {
   const box = $('#labels');
   box.innerHTML = '';
@@ -275,7 +252,7 @@ function hideAllLabels() { labelEls.forEach((el) => (el.style.display = 'none'))
 function placeLabels(items) {
   const placed = [];
   const W = window.innerWidth, H = window.innerHeight;
-  const sorted = [...items].sort((a, b) => a.dist - b.dist); // mais perto tem prioridade
+  const sorted = [...items].sort((a, b) => a.dist - b.dist);
   const seen = new Set();
   for (const it of sorted) {
     const el = labelEls.get(it.p.id);
@@ -291,7 +268,7 @@ function placeLabels(items) {
     const w = el.offsetWidth, h = el.offsetHeight;
     const scale = Math.max(0.72, Math.min(1.1, 1.15 - it.dist / 900));
     let x = s.x - w / 2, y = s.y - h - 10;
-    // empurra para cima enquanto colidir com um rótulo já posicionado
+
     for (let guard = 0; guard < 8; guard++) {
       const hit = placed.find((r) => x < r.x + r.w && x + w > r.x && y < r.y + r.h && y + h > r.y);
       if (!hit) break;
@@ -305,28 +282,25 @@ function placeLabels(items) {
   labelEls.forEach((el, id) => { if (!seen.has(id)) el.style.display = 'none'; });
 }
 
-// ---------------------------------------------------------------------------
-// Radar (mini-mapa que gira com o celular)
-// ---------------------------------------------------------------------------
 function drawRadar(heading, items) {
   const c = $('#radar'), ctx = c.getContext('2d');
   const S = c.width, R = S / 2 - 8, cx = S / 2, cy = S / 2;
   ctx.clearRect(0, 0, S, S);
-  ctx.fillStyle = 'rgba(7,42,102,.78)';
+  ctx.fillStyle = 'rgba(17,24,39,.75)';
   ctx.beginPath(); ctx.arc(cx, cy, R + 6, 0, Math.PI * 2); ctx.fill();
-  // cone de visão
+
   const half = (currentFovY() * (window.innerWidth / window.innerHeight)) / 2;
-  ctx.fillStyle = 'rgba(249,184,27,.22)';
+  ctx.fillStyle = 'rgba(255,255,255,.18)';
   ctx.beginPath(); ctx.moveTo(cx, cy);
   ctx.arc(cx, cy, R, (-90 - half) * DEG, (-90 + half) * DEG); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 2;
   [R / 2, R].forEach((r) => { ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke(); });
   const maxD = Math.max(150, Math.min(600, (items[items.length - 1]?.dist || 150) * 1.1));
-  // Norte
+
   const nA = (-heading - 90) * DEG;
-  ctx.fillStyle = '#f9b81b'; ctx.font = 'bold 26px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 26px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('N', cx + Math.cos(nA) * (R - 14), cy + Math.sin(nA) * (R - 14));
-  // pontos
+
   items.forEach((it) => {
     const a = (it.brg - heading - 90) * DEG;
     const r = Math.min(R - 4, (it.dist / maxD) * R);
@@ -341,9 +315,6 @@ function drawRadar(heading, items) {
   ctx.fillText(`${Math.round(maxD)} m`, cx, cy + R - 6);
 }
 
-// ---------------------------------------------------------------------------
-// Cartão inferior: prédio mais próximo e para onde virar
-// ---------------------------------------------------------------------------
 function updateGuide(it, heading) {
   const g = $('#guide');
   if (!it) {
@@ -400,9 +371,6 @@ function updateDebug(heading, pitch, items) {
   ].join('\n');
 }
 
-// ---------------------------------------------------------------------------
-// Modo simulação (testar no PC sem ir ao campus)
-// ---------------------------------------------------------------------------
 function setupSimControls() {
   const keymap = { KeyW: 'fwd', ArrowUp: 'fwd', KeyS: 'back', ArrowDown: 'back', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' };
   addEventListener('keydown', (e) => {
@@ -436,7 +404,7 @@ function setupSimControls() {
 function stepSim(dt) {
   const s = state.sim, k = s.keys;
   if (!k.size) return;
-  const speed = k.has('run') ? 12 : 4; // m/s
+  const speed = k.has('run') ? 12 : 4;
   if (k.has('left')) s.heading = (s.heading - 70 * dt + 360) % 360;
   if (k.has('right')) s.heading = (s.heading + 70 * dt) % 360;
   const dir = (k.has('fwd') ? 1 : 0) - (k.has('back') ? 1 : 0);
@@ -447,9 +415,6 @@ function stepSim(dt) {
   applySimPosition();
 }
 
-// ---------------------------------------------------------------------------
-// Tela de configuração / calibração dos pontos
-// ---------------------------------------------------------------------------
 function openConfig() {
   $('#config').hidden = false;
   renderConfig();

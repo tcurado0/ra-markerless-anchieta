@@ -1,12 +1,8 @@
-// =============================================================================
-// geo.js — Geolocalização: distância, rumo, coordenadas locais e GPS filtrado
-// =============================================================================
 import { SETTINGS } from './config.js';
 
-const R_EARTH = 6371008.8; // raio médio da Terra (m)
+const R_EARTH = 6371008.8;
 const rad = (d) => (d * Math.PI) / 180;
 
-// Distância de grande círculo (fórmula de Haversine), em metros
 export function haversine(a, b) {
   const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
   const h = Math.sin(dLat / 2) ** 2 +
@@ -14,7 +10,6 @@ export function haversine(a, b) {
   return 2 * R_EARTH * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-// Rumo (azimute) de a para b, em graus a partir do Norte, sentido horário
 export function bearing(a, b) {
   const y = Math.sin(rad(b.lon - a.lon)) * Math.cos(rad(b.lat));
   const x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) -
@@ -22,8 +17,6 @@ export function bearing(a, b) {
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
-// Converte lat/lon em metros no plano local ENU (Leste, Norte, Cima)
-// centrado na origem. Projeção equiretangular: erro desprezível < 5 km.
 export function toENU(origin, p) {
   const east = rad(p.lon - origin.lon) * R_EARTH * Math.cos(rad(origin.lat));
   const north = rad(p.lat - origin.lat) * R_EARTH;
@@ -42,7 +35,6 @@ export function cardinal(deg) {
   return n[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
 }
 
-// Verifica o requisito "distância de pelo menos 50 m" entre todos os pares
 export function validateDistances(points, min = SETTINGS.minDistance) {
   const pairs = [];
   for (let i = 0; i < points.length; i++)
@@ -53,14 +45,9 @@ export function validateDistances(points, min = SETTINGS.minDistance) {
   return pairs;
 }
 
-// -----------------------------------------------------------------------------
-// GpsTracker — envolve navigator.geolocation.watchPosition com filtro.
-// Usa média ponderada pela precisão (accuracy) para reduzir o "pula-pula"
-// típico do GPS de celular, e descarta leituras muito ruins.
-// -----------------------------------------------------------------------------
 export class GpsTracker {
   constructor() {
-    this.position = null;     // {lat, lon, accuracy, time}
+    this.position = null;
     this.raw = null;
     this.listeners = [];
     this.watchId = null;
@@ -87,7 +74,6 @@ export class GpsTracker {
     this.watchId = null;
   }
 
-  // Também é usado pelo modo simulação para "teleportar" o usuário
   setManual(lat, lon, accuracy = 3) {
     this.position = { lat, lon, accuracy, time: Date.now() };
     this.raw = this.position;
@@ -100,9 +86,8 @@ export class GpsTracker {
     const prev = this.position;
     if (prev && accuracy > SETTINGS.gpsMaxAccuracy && prev.accuracy < accuracy) return;
     if (!prev || haversine(prev, this.raw) > 40) {
-      this.position = { ...this.raw }; // primeira leitura ou salto grande: aceita direto
+      this.position = { ...this.raw };
     } else {
-      // Filtro tipo Kalman simplificado: peso inversamente proporcional à variância
       const wPrev = 1 / (prev.accuracy ** 2), wNew = 1 / (accuracy ** 2);
       const k = Math.max(0.25, wNew / (wPrev + wNew));
       this.position = {
@@ -118,7 +103,6 @@ export class GpsTracker {
   onChange(fn) { this.listeners.push(fn); }
   _emit() { this.listeners.forEach((fn) => fn(this.position, this.error)); }
 
-  // Média das leituras brutas durante N segundos — usada na calibração
   sample(seconds, onProgress) {
     return new Promise((resolve, reject) => {
       const readings = [];

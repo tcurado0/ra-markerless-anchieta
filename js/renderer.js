@@ -1,10 +1,3 @@
-// =============================================================================
-// renderer.js — Renderização WebGL dos pinos 3D (modelo map_pin.fbx)
-// =============================================================================
-// WebGL puro, sem three.js: o modelo FBX foi convertido em buffers binários
-// (js/pinMesh.js). O canvas é transparente e fica por cima do vídeo da câmera.
-// Mundo em metros no referencial ENU: x = Leste, y = Norte, z = Cima.
-// =============================================================================
 import { PIN_META, PIN_POSITIONS_B64, PIN_NORMALS_B64, PIN_INDICES_B64 } from './pinMesh.js';
 import { perspective, multiply, viewMatrix } from './math3d.js';
 
@@ -35,12 +28,12 @@ void main() {
   if (uUnlit > 0.5) { gl_FragColor = vec4(uColor, uAlpha); return; }
   vec3 n = normalize(vN);
   vec3 v = normalize(uEye - vW);
-  if (dot(n, v) < 0.0) n = -n;                 // iluminação dos dois lados
-  vec3 L1 = normalize(vec3(0.35, -0.25, 0.9)); // luz principal (de cima)
-  vec3 L2 = v;                                 // luz de preenchimento (da câmera)
+  if (dot(n, v) < 0.0) n = -n;
+  vec3 L1 = normalize(vec3(0.35, -0.25, 0.9));
+  vec3 L2 = v;
   float diff = max(dot(n, L1), 0.0) * 0.65 + max(dot(n, L2), 0.0) * 0.45;
   vec3 h = normalize(L1 + v);
-  float spec = pow(max(dot(n, h), 0.0), 32.0) * 0.35;  // Phong (Shininess 32 do FBX)
+  float spec = pow(max(dot(n, h), 0.0), 32.0) * 0.35;
   float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0) * 0.25;
   vec3 c = uColor * (0.22 + diff) + vec3(spec) + vec3(rim);
   gl_FragColor = vec4(c, uAlpha);
@@ -80,7 +73,6 @@ export class PinRenderer {
       (n) => (this.loc[n] = gl.getUniformLocation(p, n))
     );
 
-    // --- Malha do pino (vinda do FBX) ---
     this.pin = {
       pos: this._buffer(gl.ARRAY_BUFFER, b64ToBuffer(PIN_POSITIONS_B64)),
       nrm: this._buffer(gl.ARRAY_BUFFER, b64ToBuffer(PIN_NORMALS_B64)),
@@ -90,15 +82,13 @@ export class PinRenderer {
     };
     this.pinColor = PIN_META.diffuse;
 
-    // --- Anel no chão (indica a base/localização exata do prédio) ---
     const ring = [], seg = 64;
     for (let i = 0; i <= seg; i++) {
       const a = (i / seg) * Math.PI * 2;
-      ring.push(Math.cos(a) * 0.7, Math.sin(a) * 0.7, 0, Math.cos(a), Math.sin(a), 0); // interno, externo
+      ring.push(Math.cos(a) * 0.7, Math.sin(a) * 0.7, 0, Math.cos(a), Math.sin(a), 0);
     }
     this.ring = { pos: this._buffer(gl.ARRAY_BUFFER, new Float32Array(ring)), count: (seg + 1) * 2 };
 
-    // --- Grade do chão (somente no modo simulação) ---
     const grid = [], R = 600, step = 20;
     for (let v = -R; v <= R; v += step) grid.push(v, -R, 0, v, R, 0, -R, v, 0, R, v, 0);
     this.grid = { pos: this._buffer(gl.ARRAY_BUFFER, new Float32Array(grid)), count: grid.length / 3 };
@@ -125,7 +115,6 @@ export class PinRenderer {
     this.gl.viewport(0, 0, w, h);
   }
 
-  // camQuat: orientação da câmera; camPos: posição ENU (m); fovY em graus
   setCamera(camQuat, camPos, fovY) {
     const aspect = this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight);
     this.proj = perspective(fovY, aspect, 0.3, 6000);
@@ -153,12 +142,12 @@ export class PinRenderer {
 
   drawGrid(center) {
     const gl = this.gl;
-    // a grade "anda" com o usuário em passos de 20 m para parecer infinita
+
     const ox = Math.round(center[0] / 20) * 20, oy = Math.round(center[1] / 20) * 20;
     gl.uniformMatrix4fv(this.loc.uModel, false, new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, ox,oy,0,1]));
     gl.uniform1f(this.loc.uPosScale, 1);
     gl.uniform1f(this.loc.uUnlit, 1);
-    gl.uniform3fv(this.loc.uColor, [0.55, 0.85, 0.65]);
+    gl.uniform3fv(this.loc.uColor, [1, 1, 1]);
     gl.uniform1f(this.loc.uAlpha, 0.35);
     this._bindPositions(this.grid.pos, gl.FLOAT, false);
     gl.disableVertexAttribArray(this.loc.aNormal);
@@ -168,16 +157,15 @@ export class PinRenderer {
     gl.depthMask(true);
   }
 
-  // Desenha um pino em pos (ENU), com altura h (m), virado para o observador
   drawPin(pos, h, { yaw = 0, color = this.pinColor, alpha = 1 } = {}) {
     const gl = this.gl;
-    // Base local do pino: x->direita, y->cima (Z do mundo), z->frente (para o usuário)
+
     let fx = this.eye[0] - pos[0], fy = this.eye[1] - pos[1];
     const l = Math.hypot(fx, fy) || 1;
     fx /= l; fy /= l;
     const c = Math.cos(yaw), s = Math.sin(yaw);
     [fx, fy] = [fx * c - fy * s, fx * s + fy * c];
-    const rx = -fy, ry = fx; // direita = Cima × Frente
+    const rx = -fy, ry = fx;
     const m = new Float32Array([
       rx * h, ry * h, 0, 0,
       0, 0, h, 0,
@@ -212,7 +200,6 @@ export class PinRenderer {
     gl.depthMask(true);
   }
 
-  // Projeta ponto ENU para pixels CSS na tela; null se estiver atrás da câmera
   project(p) {
     const m = this.viewProj;
     const x = m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12];

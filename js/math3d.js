@@ -1,8 +1,3 @@
-// =============================================================================
-// math3d.js — Álgebra mínima para o WebGL (sem bibliotecas externas)
-// Matrizes 4x4 em column-major (padrão do WebGL) e quaternions [x, y, z, w].
-// =============================================================================
-
 export const DEG = Math.PI / 180;
 
 export function perspective(fovYDeg, aspect, near, far) {
@@ -27,7 +22,6 @@ export function multiply(a, b) {
   return o;
 }
 
-// Multiplica matriz 4x4 por vetor [x,y,z,w]
 export function transform(m, v) {
   const o = [0, 0, 0, 0];
   for (let r = 0; r < 4; r++)
@@ -35,7 +29,6 @@ export function transform(m, v) {
   return o;
 }
 
-// --- Quaternions -------------------------------------------------------------
 export const qIdentity = () => [0, 0, 0, 1];
 
 export function qAxisAngle(ax, ay, az, rad) {
@@ -57,7 +50,6 @@ export function qNormalize(q) {
   return [q[0] / l, q[1] / l, q[2] / l, q[3] / l];
 }
 
-// Interpolação esférica — usada para suavizar o tremor dos sensores
 export function qSlerp(a, b, t) {
   let [bx, by, bz, bw] = b;
   let cos = a[0] * bx + a[1] * by + a[2] * bz + a[3] * bw;
@@ -73,7 +65,6 @@ export function qSlerp(a, b, t) {
   return [wa * a[0] + wb * bx, wa * a[1] + wb * by, wa * a[2] + wb * bz, wa * a[3] + wb * bw];
 }
 
-// Rotaciona vetor 3D pelo quaternion
 export function qRotate(q, v) {
   const [x, y, z, w] = q;
   const ix = w * v[0] + y * v[2] - z * v[1];
@@ -87,7 +78,6 @@ export function qRotate(q, v) {
   ];
 }
 
-// Matriz de rotação 4x4 a partir de quaternion
 export function qToMat4(q) {
   const [x, y, z, w] = q;
   const x2 = x + x, y2 = y + y, z2 = z + z;
@@ -101,10 +91,9 @@ export function qToMat4(q) {
   ]);
 }
 
-// Matriz de visão: inversa de (translação * rotação) da câmera
 export function viewMatrix(q, pos) {
   const r = qToMat4(q);
-  // transposta da rotação
+
   const m = new Float32Array([
     r[0], r[4], r[8], 0,
     r[1], r[5], r[9], 0,

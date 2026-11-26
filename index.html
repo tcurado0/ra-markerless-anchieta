@@ -3,22 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#0b3d91">
+  <meta name="theme-color" content="#111827">
   <title>RA Markerless — Campus UniAnchieta</title>
   <meta name="description" content="Realidade Aumentada markerless (GPS + bússola) que mostra a localização dos prédios do campus UniAnchieta.">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- Camada 1: vídeo da câmera traseira -->
   <video id="camera" playsinline muted autoplay></video>
-  <!-- Fundo do modo simulação (céu + chão) -->
   <div id="sky" hidden></div>
-  <!-- Camada 2: WebGL com os pinos 3D -->
   <canvas id="gl"></canvas>
-  <!-- Camada 3: nomes dos prédios (HTML posicionado pela projeção 3D) -->
   <div id="labels"></div>
 
-  <!-- HUD -->
   <header id="hud" hidden>
     <div class="chip" id="chip-gps">GPS: aguardando…</div>
     <div class="chip" id="chip-heading">—</div>
@@ -39,7 +34,6 @@
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <!-- Tela inicial -->
   <section id="start" class="screen">
     <div class="card">
       <div class="logo">📍</div>
@@ -53,7 +47,6 @@
     </div>
   </section>
 
-  <!-- Configuração / calibração -->
   <section id="config" class="screen" hidden>
     <div class="card wide">
       <div class="row between">
